@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import request from 'supertest';
+import {createApp} from '../src/app.js';
+process.env.JWT_SECRET='middleware-test-secret-at-least-32-characters';
+process.env.APP_ORIGIN='http://localhost:5173';
+const app=createApp();
+test('anonymous and tampered-cookie requests are rejected before database access',async()=>{assert.equal((await request(app).get('/api/transactions')).status,401);assert.equal((await request(app).get('/api/transactions').set('Cookie','fintrack=invalid-token')).status,401)});
+test('state-changing requests require header and approved browser origin',async()=>{assert.equal((await request(app).post('/api/auth/login').send({})).status,403);assert.equal((await request(app).post('/api/auth/login').set('X-FinTrack','1').set('Origin','https://untrusted.example').send({})).status,403)});
+test('registration validation and malformed JSON produce clear client errors',async()=>{assert.equal((await request(app).post('/api/auth/register').set('X-FinTrack','1').send({name:'A',email:'wrong',password:'short'})).status,400);assert.equal((await request(app).post('/api/auth/login').set('X-FinTrack','1').set('Content-Type','application/json').send('{')).status,400)});

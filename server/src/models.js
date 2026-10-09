@@ -1,0 +1,13 @@
+import mongoose from 'mongoose';
+import { categories } from './domain.js';
+const {Schema,model}=mongoose;
+const userSchema=new Schema({name:{type:String,required:true},email:{type:String,required:true,unique:true},passwordHash:{type:String,required:true},categories:{type:[String],default:categories},resetHash:String,resetExpires:Date,tokenVersion:{type:Number,default:0}},{timestamps:true});
+export const User=model('User',userSchema);
+const transactionSchema=new Schema({userId:{type:Schema.Types.ObjectId,required:true,index:true},type:{type:String,enum:['income','expense'],required:true},amountPaise:{type:Number,required:true,min:1},category:{type:String,required:true},description:String,paymentMethod:String,date:{type:String,required:true},recurrenceKey:String},{timestamps:true});
+transactionSchema.index({userId:1,date:-1});
+transactionSchema.index({userId:1,recurrenceKey:1},{unique:true,partialFilterExpression:{recurrenceKey:{$type:'string'}}});
+export const Transaction=model('Transaction',transactionSchema);
+const budgetSchema=new Schema({userId:{type:Schema.Types.ObjectId,required:true},month:String,category:String,amountPaise:Number},{timestamps:true});
+budgetSchema.index({userId:1,month:1,category:1},{unique:true});
+export const Budget=model('Budget',budgetSchema);
+export const Recurring=model('Recurring',new Schema({userId:{type:Schema.Types.ObjectId,required:true,index:true},type:String,amountPaise:Number,category:String,description:String,paymentMethod:String,nextDate:String,frequency:String,dayOfMonth:Number},{timestamps:true}));
